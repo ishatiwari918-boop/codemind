@@ -3,7 +3,7 @@ import { walk } from "./scan.js";
 import { chunkFile } from "./chunk.js";
 import { embed } from "./embed.js";
 import { search } from "./search.js";
-import { askLLM } from "./LLM.js";
+import { askLLM } from "./llm.js";
 
 const folder = process.argv[2];
 const question = process.argv[3];
