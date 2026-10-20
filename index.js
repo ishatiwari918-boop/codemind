@@ -4,6 +4,7 @@ import { chunkFile } from "./chunk.js";
 import { embed } from "./embed.js";
 import { search } from "./search.js";
 import { askLLM } from "./llm.js";
+import { routeQuestion } from "./router.js";
 
 const folder = process.argv[2];
 const question = process.argv[3];
@@ -12,7 +13,19 @@ if (!folder || !question) {
   process.exit(1);
 }
 
-// Steps 1 + 2: scan and chunk
+const K = { simple: 3, complex: 8 };
+
+// Adaptive step: decide how much work this question needs
+const route = await routeQuestion(question);
+console.log("Route:", route);
+
+if (route === "general") {
+  const answer = await askLLM("You are a helpful programming assistant. Be concise.", question);
+  console.log("\nAnswer (no retrieval):\n" + answer);
+  process.exit(0);
+}
+
+// Scan and chunk
 const files = walk(folder);
 const chunks = [];
 for (const f of files) {
@@ -20,18 +33,18 @@ for (const f of files) {
 }
 console.log(`Files: ${files.length} | Chunks: ${chunks.length}`);
 
-// Step 3: embed every chunk
+// Embed every chunk
 console.log("Embedding chunks...");
 for (const c of chunks) {
   c.vector = await embed(c.text);
 }
 
-// Step 4: search
-const top = await search(chunks, question);
-console.log("\nTop matches:");
+// Search with the depth chosen by the router
+const top = await search(chunks, question, K[route]);
+console.log(`\nTop ${top.length} matches:`);
 top.forEach(c => console.log(c.score.toFixed(3), `${c.file}:${c.startLine}-${c.endLine}`));
 
-// Step 5: ask the LLM using only those chunks
+// Ask the LLM using only those chunks
 const context = top
   .map((c, i) => `[Source ${i + 1}: ${c.file}, lines ${c.startLine}-${c.endLine}]\n${c.text}`)
   .join("\n\n");
