@@ -47,7 +47,7 @@ export async function askLLM(systemPrompt, userPrompt) {
       lastError = err;
       console.log(`[groq] attempt ${attempt} failed: ${err.message.slice(0, 120)}`);
       const retryable = err.code === 503 || err.code === 429 || err.name === "TimeoutError";
-      if (!retryable) throw err; // bad key or wrong model: retrying won't help
+      if (!retryable) throw err; 
       await sleep(attempt * 2000);
     }
   }

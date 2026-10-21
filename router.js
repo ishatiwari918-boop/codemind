@@ -9,7 +9,6 @@ complex - needs several files or steps to explain (flows, comparisons, how parts
 export async function routeQuestion(question) {
   try {
     const reply = await askLLM(ROUTER_PROMPT, `Question: ${question}`);
-    console.log("Router raw reply:", JSON.stringify(reply));
     const word = reply.trim().toLowerCase();
     if (word.includes("general")) return "general";
     if (word.includes("complex")) return "complex";
