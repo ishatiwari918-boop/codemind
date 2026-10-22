@@ -16,7 +16,7 @@ if (!folder || !question) {
 
 const K = { simple: 3, complex: 8 };
 
-// Adaptive step
+// Adaptive step: decide how much work this question needs
 const route = await routeQuestion(question);
 console.log("Route:", route);
 
@@ -26,28 +26,34 @@ if (route === "general") {
   process.exit(0);
 }
 
-// Scan and chunk
+// Scan and chunk (each chunk remembers its file's last-modified date)
 const files = walk(folder);
 const chunks = [];
 for (const f of files) {
-  chunks.push(...chunkFile(f, fs.readFileSync(f, "utf-8")));
+  const modified = fs.statSync(f).mtime;
+  for (const c of chunkFile(f, fs.readFileSync(f, "utf-8"))) {
+    chunks.push({ ...c, modified });
+  }
 }
 console.log(`Files: ${files.length} | Chunks: ${chunks.length}`);
 
-// Embed
+// Embed every chunk
 console.log("Embedding chunks...");
 for (const c of chunks) {
   c.vector = await embed(c.text);
 }
 
-// Search
+// Search with the depth chosen by the router
 const found = await search(chunks, question, K[route]);
 console.log(`\nSearch returned ${found.length} chunks:`);
 found.forEach(c => console.log(c.score.toFixed(3), `${c.file}:${c.startLine}-${c.endLine}`));
 
-// Corrective step: drop weak chunks
+// Corrective step: drop weak chunks and penalize stale ones
 const { kept, dropped } = filterChunks(found);
 console.log(`\nCorrective filter: kept ${kept.length}, dropped ${dropped}`);
+kept.forEach(c =>
+  console.log(c.finalScore.toFixed(3), c.stale ? "(stale)" : "(fresh)", `${c.file}:${c.startLine}-${c.endLine}`)
+);
 
 if (kept.length === 0) {
   console.log("\nAnswer:\nI could not find this in the codebase.");
