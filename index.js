@@ -46,13 +46,19 @@ for (const c of chunks) {
 // Search with the depth chosen by the router
 const found = await search(chunks, question, K[route]);
 console.log(`\nSearch returned ${found.length} chunks:`);
-found.forEach(c => console.log(c.score.toFixed(3), `${c.file}:${c.startLine}-${c.endLine}`));
+found.forEach(c =>
+  console.log(c.score.toFixed(3), `${c.file} [${c.name}] ${c.startLine}-${c.endLine}`)
+);
 
 // Corrective step: drop weak chunks and penalize stale ones
 const { kept, dropped } = filterChunks(found);
 console.log(`\nCorrective filter: kept ${kept.length}, dropped ${dropped}`);
 kept.forEach(c =>
-  console.log(c.finalScore.toFixed(3), c.stale ? "(stale)" : "(fresh)", `${c.file}:${c.startLine}-${c.endLine}`)
+  console.log(
+    c.finalScore.toFixed(3),
+    c.stale ? "(stale)" : "(fresh)",
+    `${c.file} [${c.name}] ${c.startLine}-${c.endLine}`
+  )
 );
 
 if (kept.length === 0) {
@@ -62,13 +68,16 @@ if (kept.length === 0) {
 
 // Ask the LLM using only the good chunks
 const context = kept
-  .map((c, i) => `[Source ${i + 1}: ${c.file}, lines ${c.startLine}-${c.endLine}]\n${c.text}`)
+  .map(
+    (c, i) =>
+      `[Source ${i + 1}: ${c.file}, ${c.name}, lines ${c.startLine}-${c.endLine}]\n${c.text}`
+  )
   .join("\n\n");
 
 const systemPrompt = `You are a codebase assistant.
 Answer ONLY using the context provided.
 If the answer is not in the context, say "I could not find this in the codebase." and stop.
-Always mention which source (file and lines) you used.`;
+Always mention which source (file, function name and lines) you used.`;
 
 try {
   const answer = await askLLM(systemPrompt, `Context:\n${context}\n\nQuestion: ${question}`);
