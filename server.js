@@ -1,5 +1,7 @@
 import express from "express";
-import { buildIndex, answerQuestion } from "./pipeline.js";
+import { answerQuestion } from "./pipeline.js";
+import { setupDb } from "./db.js";
+import { syncFolder, loadChunks } from "./store.js";
 
 const PORT = 3000;
 const FOLDER = process.argv[2];
@@ -12,7 +14,7 @@ if (!FOLDER) {
 const app = express();
 app.use(express.json());
 
-// The index lives here, in memory, after startup
+// The index lives here, in memory, after startup (loaded from the database)
 let indexedChunks = null;
 let indexing = true;
 
@@ -39,7 +41,6 @@ app.post("/ask", async (req, res) => {
 
   try {
     const started = Date.now();
-    // Reuse the chunks built at startup instead of re-embedding every time
     const result = await answerQuestion(question, async () => indexedChunks);
     res.json({
       route: result.route,
@@ -59,12 +60,14 @@ app.post("/ask", async (req, res) => {
   }
 });
 
-// Start listening first, then build the index in the background
+// Start listening first, then sync the folder into the database and load it
 app.listen(PORT, async () => {
   console.log(`CodeMind server running at http://localhost:${PORT}`);
   console.log(`Indexing folder: ${FOLDER}`);
   try {
-    indexedChunks = await buildIndex(FOLDER);
+    await setupDb();
+    const project = await syncFolder(FOLDER);
+    indexedChunks = await loadChunks(project);
     indexing = false;
     console.log(`Index ready: ${indexedChunks.length} chunks`);
   } catch (err) {
