@@ -13,6 +13,7 @@ async function callGroq(systemPrompt, userPrompt) {
     },
     body: JSON.stringify({
       model: MODEL,
+      temperature: 0,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
