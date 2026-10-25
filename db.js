@@ -30,4 +30,22 @@ export async function setupDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
+    await pool.query(`
+    CREATE TABLE IF NOT EXISTS projects (
+      id SERIAL PRIMARY KEY,
+      user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      folder TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'indexing',
+      error TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (user_id, name)
+    )
+  `);
+  await pool.query(
+    "ALTER TABLE chunks ADD COLUMN IF NOT EXISTS project_id INT REFERENCES projects(id) ON DELETE CASCADE"
+  );
+  await pool.query("CREATE INDEX IF NOT EXISTS chunks_project_id_idx ON chunks (project_id)");
+  // Old rows from before projects existed belong to nobody: remove them
+  await pool.query("DELETE FROM chunks WHERE project_id IS NULL");
 }
