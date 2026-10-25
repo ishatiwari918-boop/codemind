@@ -22,4 +22,12 @@ export async function setupDb() {
     )
   `);
   await pool.query("CREATE INDEX IF NOT EXISTS chunks_project_idx ON chunks (project)");
+    await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
 }

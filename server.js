@@ -5,6 +5,7 @@ import { answerQuestion } from "./pipeline.js";
 import { setupDb } from "./db.js";
 import { syncFolder, loadChunks } from "./store.js";
 import { getCached, setCached } from "./cache.js";
+import { signup, login, requireAuth } from "./auth.js";
 
 const PORT = 3000;
 const FOLDER = process.argv[2];
@@ -16,22 +17,32 @@ if (!FOLDER) {
 const PROJECT = path.resolve(FOLDER);
 
 const app = express();
-app.use(express.json({ limit: "10kb" })); // reject oversized request bodies
+app.use(express.json({ limit: "10kb" }));
 
 let indexedChunks = null;
 let indexing = true;
 
-// Rate limit: 10 questions per minute per client
+// Questions: 10 per minute per logged-in user
 const askLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 10,
+  keyGenerator: req => String(req.user.id),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests. Please wait a minute and try again." },
 });
 
+// Signup and login: 20 attempts per 15 minutes per client (slows password guessing)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Please try again later." },
+});
+
 app.get("/", (req, res) => {
-  res.send('CodeMind API is running. Send POST /ask with { "question": "..." }');
+  res.send("CodeMind API is running. Sign up at POST /auth/signup, then POST /ask with your token.");
 });
 
 app.get("/health", (req, res) => {
@@ -41,7 +52,13 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.post("/ask", askLimiter, async (req, res) => {
+// Auth routes
+app.post("/auth/signup", authLimiter, signup);
+app.post("/auth/login", authLimiter, login);
+app.get("/me", requireAuth, (req, res) => res.json({ user: req.user }));
+
+// Protected: requireAuth runs first, then the per-user rate limit
+app.post("/ask", requireAuth, askLimiter, async (req, res) => {
   const question = req.body?.question;
 
   if (!question || typeof question !== "string") {
@@ -57,7 +74,6 @@ app.post("/ask", askLimiter, async (req, res) => {
   try {
     const started = Date.now();
 
-    // Cache check: same question, same project = instant answer
     const cached = getCached(PROJECT, question);
     if (cached) {
       return res.json({ ...cached, cached: true, tookMs: Date.now() - started });
