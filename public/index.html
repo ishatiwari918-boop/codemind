@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CodeMind</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <section id="auth">
+    <h1>CodeMind</h1>
+    <p class="muted">Ask questions about your codebase and get answers with sources.</p>
+    <input id="email" type="email" placeholder="Email" autocomplete="username">
+    <input id="password" type="password" placeholder="Password (8+ characters)" autocomplete="current-password">
+    <div class="row">
+      <button id="loginBtn">Log in</button>
+      <button id="signupBtn" class="secondary">Sign up</button>
+    </div>
+    <p id="authError" class="error"></p>
+  </section>
+
+  <section id="app" hidden>
+    <aside>
+      <div class="row between">
+        <strong>Projects</strong>
+        <button id="logoutBtn" class="secondary small">Log out</button>
+      </div>
+      <ul id="projects"></ul>
+      <form id="addForm">
+        <input id="projName" placeholder="Project name" maxlength="60" required>
+        <input id="projFolder" placeholder="Folder name" maxlength="200" required>
+        <button type="submit">Add project</button>
+        <p id="addError" class="error"></p>
+      </form>
+    </aside>
+
+    <main>
+      <div id="messages"><p class="muted">Pick a project, then ask a question.</p></div>
+      <form id="askForm">
+        <input id="question" placeholder="Ask about this codebase..." maxlength="500" autocomplete="off" disabled>
+        <button id="askBtn" type="submit" disabled>Ask</button>
+      </form>
+    </main>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import rateLimit from "express-rate-limit";
 import { setupDb, pool } from "./db.js";
 import { signup, login, requireAuth } from "./auth.js";
@@ -18,9 +19,8 @@ const authLimiter = rateLimit({
   message: { error: "Too many attempts. Please try again later." },
 });
 
-app.get("/", (req, res) => {
-  res.send("CodeMind API is running. Sign up at POST /auth/signup, then use /projects with your token.");
-});
+// Serves public/index.html at "/" (the chat UI)
+app.use(express.static(path.join(import.meta.dirname, "public")));
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 

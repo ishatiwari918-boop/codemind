@@ -1,0 +1,44 @@
+:root {
+  --bg: #ffffff; --panel: #f4f5f7; --text: #1b1f24; --muted: #6a737d;
+  --accent: #3b5bdb; --border: #d8dce2; --error: #c92a2a;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14161a; --panel: #1d2026; --text: #e6e8eb; --muted: #9aa3ad;
+          --accent: #748ffc; --border: #2c313a; --error: #ff8787; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+[hidden] { display: none !important; }
+input { width: 100%; padding: 10px; margin: 6px 0; border: 1px solid var(--border);
+        border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; }
+button { padding: 10px 14px; border: 0; border-radius: 8px; background: var(--accent);
+         color: #fff; font: inherit; cursor: pointer; }
+button.secondary { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+button.small { padding: 4px 8px; font-size: 13px; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.row { display: flex; gap: 8px; } .between { justify-content: space-between; align-items: center; }
+.muted { color: var(--muted); } .error { color: var(--error); min-height: 1.2em; font-size: 14px; }
+
+#auth { max-width: 380px; margin: 12vh auto; padding: 0 16px; }
+#app { display: flex; height: 100vh; }
+aside { width: 280px; padding: 16px; background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; }
+#projects { list-style: none; padding: 0; margin: 12px 0; }
+#projects li button { width: 100%; text-align: left; margin-bottom: 6px; background: var(--bg);
+                      color: var(--text); border: 1px solid var(--border); }
+#projects li button.active { border-color: var(--accent); }
+.status { font-size: 12px; color: var(--muted); }
+
+main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+#messages { flex: 1; overflow-y: auto; padding: 16px; }
+.msg { max-width: 760px; margin: 0 0 14px; padding: 10px 14px; border-radius: 10px;
+       background: var(--panel); white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.user { background: var(--accent); color: #fff; margin-left: auto; }
+.sources { margin-top: 8px; font-size: 13px; color: var(--muted); white-space: normal; }
+.sources code { background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+#askForm { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+#askForm input { margin: 0; }
+
+@media (max-width: 700px) {
+  #app { flex-direction: column; height: auto; min-height: 100vh; }
+  aside { width: 100%; border-right: 0; border-bottom: 1px solid var(--border); }
+}
