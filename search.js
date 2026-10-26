@@ -1,8 +1,8 @@
 import path from "path";
 import { embed, cosineSimilarity } from "./embed.js";
 
-const VECTOR_WEIGHT = 0.6;
-const KEYWORD_WEIGHT = 0.4;
+const VECTOR_WEIGHT = 0.5;
+const KEYWORD_WEIGHT = 0.5;
 
 // Words that say nothing about what to look for
 const STOPWORDS = new Set([

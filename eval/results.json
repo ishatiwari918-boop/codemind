@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-26T11:52:46.144Z",
+  "date": "2026-10-26T12:06:20.271Z",
   "chunks": 59,
   "retrieval": [
     {
@@ -16,14 +16,14 @@
     },
     {
       "setup": "hybrid",
-      "Hit@1": "63%",
-      "Hit@3": "94%",
-      "MRR": "0.77"
+      "Hit@1": "69%",
+      "Hit@3": "88%",
+      "MRR": "0.79"
     }
   ],
   "filtering": {
-    "correct chunk still present after filter": "94%",
-    "wrongly refused (answerable)": "0%",
+    "correct chunk still present after filter": "88%",
+    "wrongly refused (answerable)": "6%",
     "correctly refused (unanswerable)": "100%"
   }
 }
