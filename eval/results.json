@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-26T11:52:46.144Z",
+  "chunks": 59,
+  "retrieval": [
+    {
+      "setup": "vector",
+      "Hit@1": "56%",
+      "Hit@3": "94%",
+      "MRR": "0.72"
+    },
+    {
+      "setup": "keyword",
+      "Hit@1": "50%",
+      "Hit@3": "81%",
+      "MRR": "0.66"
+    },
+    {
+      "setup": "hybrid",
+      "Hit@1": "63%",
+      "Hit@3": "94%",
+      "MRR": "0.77"
+    }
+  ],
+  "filtering": {
+    "correct chunk still present after filter": "94%",
+    "wrongly refused (answerable)": "0%",
+    "correctly refused (unanswerable)": "100%"
+  }
+}

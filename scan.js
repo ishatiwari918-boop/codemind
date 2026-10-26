@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-const SKIP = ["node_modules", ".git", "dist"];
+const SKIP = ["node_modules", ".git", "dist", "eval"];
 const EXTENSIONS = [".js", ".md"];
 
 export function walk(dir) {
