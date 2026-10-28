@@ -13,12 +13,17 @@ const K = { simple: 3, complex: 8 };
 const SYSTEM_PROMPT = `You are a codebase assistant.
 Answer ONLY using the context provided.
 If the answer is not in the context, say "I could not find this in the codebase." and stop.
-Always mention which source (file, function name and lines) you used.`;
+
+Style rules:
+- Write plain text only. Do not use markdown: no asterisks, no bold, no headings, no bullet symbols.
+- Keep the answer under 120 words, in short sentences.
+- Name the key function or file in the sentence where it matters (for example: filterChunks in corrective.js).
+- Do NOT list sources or line numbers at the end; they are shown to the user separately.
+- Do not quote the README unless the question is about the README.`;
 
 const label = c => `${c.file} [${c.name}] ${c.startLine}-${c.endLine}`;
 
-// Scan, chunk and embed a folder. The file and function name are added to
-// the text before embedding, so the vector knows what the chunk is called.
+
 export async function buildIndex(folder) {
   const files = walk(folder);
   const chunks = [];
@@ -37,7 +42,7 @@ export async function buildIndex(folder) {
   return chunks;
 }
 
-// Search, then drop weak and stale chunks
+
 async function retrieve(chunks, question, route) {
   const found = await search(chunks, question, K[route]);
   console.log(`\nSearch returned ${found.length} chunks:`);
@@ -57,7 +62,7 @@ async function retrieve(chunks, question, route) {
   return kept;
 }
 
-// Ask the LLM using only the good chunks
+
 async function generate(kept, question) {
   const context = kept
     .map(
@@ -68,14 +73,15 @@ async function generate(kept, question) {
   return askLLM(SYSTEM_PROMPT, `Context:\n${context}\n\nQuestion: ${question}`);
 }
 
-// The whole pipeline. getChunks is only called when retrieval is needed,
-// so general questions never pay for scanning and embedding.
 export async function answerQuestion(question, getChunks) {
   const route = await routeQuestion(question);
   console.log("Route:", route);
 
   if (route === "general") {
-    const answer = await askLLM("You are a helpful programming assistant. Be concise.", question);
+    const answer = await askLLM(
+      "You are a helpful programming assistant. Be concise. Write plain text without markdown.",
+      question
+    );
     return { route, answer, sources: [] };
   }
 
