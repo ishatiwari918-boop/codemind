@@ -5,7 +5,8 @@ Ask questions about a codebase in plain English and get answers that **cite the 
 Built from scratch (no LangChain / LlamaIndex) to understand every stage of a RAG system: chunking, embeddings, hybrid retrieval, query routing, corrective filtering, caching, auth and evaluation.
 
 ![CodeMind UI](docs/screenshot.png)
-<!-- Add the live demo link here once deployed -->
+**Live demo:** https://codemind-9fu8.onrender.com 
+*(Hosted on a free tier: if nobody has used it for 15 minutes it goes to sleep, so the first request can take about a minute to wake up. Sign up with any email, add a public GitHub repo, then ask about its code.)*
 
 ## How it works
 
@@ -75,7 +76,8 @@ Run it yourself: `node eval/run.js` (results are saved to `eval/results.json`).
 - **Auth:** signup/login with bcrypt-hashed passwords and JWTs. Login returns the same error for a wrong email or a wrong password.
 - **Per-user projects:** each user only sees their own projects. Accessing someone else's project returns 404, not 403, so project IDs can't be probed.
 - **Background indexing:** adding a project returns `202` immediately; the UI polls until it is `ready`. Projects stuck in `indexing` after a crash are marked `failed` on startup.
-- **Security:** projects must live under a single `PROJECTS_ROOT`; paths are resolved with `realpath` and checked against it (path traversal protection), symlinks are skipped, and absolute server paths are never sent to the client or the LLM.
+- **Add a project from a GitHub link:** paste `https://github.com/owner/repo`. The server validates the link (GitHub URLs only), runs a shallow `git clone` without a shell, removes `.git`, enforces size limits (150 `.js`/`.md` files, 3 MB), then indexes it in the background. Per-user limits: 5 projects, and at most 2 indexing jobs at once on the server.
+- **Security:** clones live under a single `PROJECTS_ROOT`; for local folders, paths are resolved with `realpath` and checked against it (path traversal protection). Symlinks are skipped, and absolute server paths are never sent to the client or the LLM. Local folder names are disabled in production; only GitHub links are accepted.
 - **Rate limiting and caching:** per-user rate limits; answers cached in memory (10 min TTL, 200 entries).
 - **Storage:** PostgreSQL + `pgvector` (`vector(384)`) on Neon.
 - **UI:** plain HTML/CSS/JS chat interface. Answers are rendered with `textContent`, never `innerHTML`, since they come from an LLM.
@@ -87,7 +89,7 @@ Run it yourself: `node eval/run.js` (results are saved to `eval/results.json`).
 | GET | `/health` | Health check |
 | POST | `/auth/signup`, `/auth/login` | Returns a JWT |
 | GET | `/me` | Current user |
-| POST | `/projects` | Add a project `{ name, folder }` (indexes in background) |
+| POST | `/projects` | Add a project `{ name, repoUrl }` with a public GitHub link (clones and indexes in background) |
 | GET | `/projects` | List your projects and their status |
 | DELETE | `/projects/:id` | Delete a project |
 | POST | `/projects/:id/ask` | Ask a question `{ question }` → `{ answer, sources }` |
@@ -98,6 +100,7 @@ Run it yourself: `node eval/run.js` (results are saved to `eval/results.json`).
 server.js        Express app, static UI, startup checks
 auth.js          signup / login / JWT middleware
 projects.js      project routes (ownership checks, rate limits, ask endpoint)
+github.js        GitHub link validation and safe shallow clone
 pipeline.js      core RAG logic: buildIndex, answerQuestion
 index.js         command-line wrapper around the pipeline
 scan.js          walks a folder (skips node_modules, .git, dist, symlinks)
@@ -117,7 +120,7 @@ The RAG logic in `pipeline.js` is kept separate from every entry point (CLI, HTT
 
 ## Run locally
 
-Requirements: Node 18+, a free [Neon](https://neon.tech) Postgres database with the `vector` extension, and a free [Groq](https://console.groq.com) API key.
+Requirements: Node 20.11+, a free [Neon](https://neon.tech) Postgres database with the `vector` extension, and a free [Groq](https://console.groq.com) API key.
 
 ```bash
 npm install
@@ -132,18 +135,29 @@ JWT_SECRET=
 PROJECTS_ROOT=
 ```
 
-`PROJECTS_ROOT` is one parent folder; every project you add is a subfolder inside it.
+`PROJECTS_ROOT` is one parent folder. Cloned repos go in a `clones` subfolder inside it. For local development you can also type the name of a folder that sits directly inside it (this is disabled when `NODE_ENV=production`). `git` must be installed.
 
 ```bash
 node server.js        # then open http://localhost:3000
 node eval/run.js      # run the evaluation
 ```
 
+## Deployment
+
+Deployed on [Render](https://render.com) (free web service, Node) with the database on Neon.
+
+- Build command `npm install`, start command `npm start`.
+- Environment variables set in the host dashboard (never committed): `GROQ_API_KEY`, `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`, `PROJECTS_ROOT=/tmp/projects`.
+- Chunks and embeddings live in Postgres, so the app does not depend on the server's disk, which is wiped when the free instance sleeps.
+- The embedding model runs inside the server process; locally it uses roughly 200 MB of memory.
+
 ## Known limitations and next steps
 
 - Only `.js` and `.md` files are indexed.
 - Cache and rate limits are in memory, so they are per-process (Redis would be needed for multiple instances).
-- Projects are loaded from a server folder; a hosted version should accept a zip or GitHub URL.
+- Only public GitHub repositories can be added (no private repos, no zip upload yet), and repos are limited to 150 `.js`/`.md` files.
+- Very vague questions (for example "what does this library do?") are refused, because they share no vocabulary with the code and score below the relevance threshold. Specific questions about a file or function work best.
+- The free hosting tier has a small CPU share, so indexing a repo takes longer than on a laptop, and the first request after idle time is slow.
 - Answers are not streamed.
 - Retrieval precision: the Sources box can include loosely related chunks (for example other chunking code) alongside the right one.
 - Larger, independently written evaluation set.
