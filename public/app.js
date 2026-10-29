@@ -63,15 +63,40 @@ async function loadProjects() {
       if (p.id === currentId) btn.className = "active";
       const status = document.createElement("div");
       status.className = "status";
-      status.textContent = p.status === "ready" ? `${p.chunks} chunks` : p.status;
+      status.textContent =
+        p.status === "ready" ? `${p.chunks} chunks` : p.status === "failed" && p.error ? `failed: ${p.error}` : p.status;
       btn.appendChild(status);
       btn.onclick = () => selectProject(p);
-      li.appendChild(btn);
+
+      const del = document.createElement("button");
+      del.className = "del secondary";
+      del.textContent = "×";
+      del.title = "Delete project";
+      del.onclick = () => deleteProject(p);
+
+      li.append(btn, del);
       list.appendChild(li);
     }
     clearTimeout(pollTimer);
     if (projects.some(p => p.status === "indexing")) pollTimer = setTimeout(loadProjects, 2000);
   } catch { /* a 401 already logged the user out */ }
+}
+
+async function deleteProject(p) {
+  if (!confirm(`Delete "${p.name}" and its index?`)) return;
+  try {
+    await api(`/projects/${p.id}`, "DELETE");
+    if (p.id === currentId) {
+      currentId = null;
+      $("question").disabled = true;
+      $("askBtn").disabled = true;
+      $("messages").replaceChildren();
+      addMessage("bot", "Pick a project, then ask a question.");
+    }
+    loadProjects();
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 function selectProject(p) {
@@ -88,7 +113,12 @@ $("addForm").onsubmit = async e => {
   e.preventDefault();
   $("addError").textContent = "";
   try {
-    await api("/projects", "POST", { name: $("projName").value.trim(), folder: $("projFolder").value.trim() });
+    const source = $("projFolder").value.trim();
+    // A link means "clone from GitHub"; anything else is a local folder name (development only)
+    const body = /^https?:\/\//i.test(source)
+      ? { name: $("projName").value.trim(), repoUrl: source }
+      : { name: $("projName").value.trim(), folder: source };
+    await api("/projects", "POST", body);
     $("projName").value = "";
     $("projFolder").value = "";
     loadProjects();

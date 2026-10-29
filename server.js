@@ -5,9 +5,12 @@ import { setupDb, pool } from "./db.js";
 import { signup, login, requireAuth } from "./auth.js";
 import projectsRouter from "./projects.js";
 
-const PORT = 3000;
+// Hosting platforms tell the app which port to use
+const PORT = process.env.PORT || 3000;
 
 const app = express();
+// Behind a hosting proxy, trust one hop so rate limits see the real client address
+app.set("trust proxy", 1);
 app.use(express.json({ limit: "10kb" }));
 
 // Signup and login: 20 attempts per 15 minutes per client (slows password guessing)
@@ -42,5 +45,5 @@ try {
 }
 
 app.listen(PORT, () => {
-  console.log(`CodeMind server running at http://localhost:${PORT}`);
+  console.log(`CodeMind server running on port ${PORT}`);
 });

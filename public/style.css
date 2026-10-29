@@ -42,3 +42,7 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
   #app { flex-direction: column; height: auto; min-height: 100vh; }
   aside { width: 100%; border-right: 0; border-bottom: 1px solid var(--border); }
 }
+
+#projects li { display: flex; gap: 6px; margin-bottom: 6px; }
+#projects li button:first-child { flex: 1; margin-bottom: 0; min-width: 0; }
+#projects li button.del { width: auto; margin-bottom: 0; padding: 0 10px; }
